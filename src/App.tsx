@@ -1,24 +1,29 @@
-import React, { useState } from 'react';
-import Loader from './components/Loader';
+import React, { useEffect } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import type { RootState } from './services/store/store';
+import { fetchWeather, selectDay } from './services/slices/weatherSlice';
 import CurrentWeather from './components/CurrentWeather';
 import ForecastGrid from './components/ForecastGrid';
+import Loader from './components/Loader';
 import './App.css';
 
 export default function App() {
+  const dispatch = useDispatch();
+  const { days, selectedIndex, loading, error } = useSelector(
+    (state: RootState) => state.weather
+  );
 
-  const [selectedDay, setSelectedDay] = useState(0);
-  const [loading] = useState(false);
+  console.log(days,'days === olly');
 
-    const mockDays = [
-      { date: '2026-02-01', temp: 22, condition: 'Sunny' },
-      { date: '2026-02-02', temp: 24, condition: 'Partly Cloudy' },
-      { date: '2026-02-03', temp: 19, condition: 'Rain' },
-      { date: '2026-02-04', temp: 21, condition: 'Sunny' },
-      { date: '2026-02-05', temp: 18, condition: 'Storm' },
-      { date: '2026-02-06', temp: 25, condition: 'Clear' }
-    ];
+  useEffect(() => {
+    dispatch(fetchWeather());
+  }, [dispatch]);
 
-  const selected = mockDays[selectedDay];
+  if (loading) return <Loader />;
+  if (error) return <div>Error: {error}</div>;
+  if (!days.length) return <div>No weather data yet.</div>;
+
+  const selected = days[selectedIndex];
 
   return (
     <div className="app">
@@ -26,21 +31,15 @@ export default function App() {
         <h1 className="title">Weather App 🌨️</h1>
       </header>
 
-      {loading ? (
-        <Loader />
-      ) : (
-        <>
-           <CurrentWeather data={selected} />
-          <div className="section-forecast">
-            <h3>Forecast</h3>   
-              <ForecastGrid
-              days={mockDays}
-              selectedIndex={selectedDay}
-              onSelect={setSelectedDay}
-            /> 
-          </div>
-        </>
-      )}
+      <CurrentWeather data={selected} />
+      <div className="section">
+        <h3>Forecast</h3>
+        <ForecastGrid
+          days={days}
+          selectedIndex={selectedIndex}
+          onSelect={(i) => dispatch(selectDay(i))}
+        />
+      </div>
     </div>
   );
 }

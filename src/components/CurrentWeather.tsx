@@ -1,8 +1,8 @@
 import React from 'react';
-import { formatDateLabel } from '../services/hooks/formatDateLabel';
+import { formatDateLabel } from '../services/utils/hooks/formatDateLabel';
 
 type Props = {
-  data: { date: string; temp: number; condition: string };
+  data: { date: string; temp: number; condition: string ; emoji: string;};
 };
 
 export default function CurrentWeather({ data }: Props) {
@@ -10,8 +10,8 @@ export default function CurrentWeather({ data }: Props) {
     <div className="card current">
       <div className="icon">
         <span role="img" aria-label="weather">
-          {/* to use accordingly based of the weather */}
-          ☀️⛅️🌧️🌩️🌤️
+          {data.emoji}
+
         </span>
       </div>
       <div className="details">

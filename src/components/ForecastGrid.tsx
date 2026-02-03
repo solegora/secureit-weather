@@ -1,8 +1,6 @@
-import React from 'react';
 import DayTile from './DayTile';
 
-
-type Day = { date: string; temp: number; condition: string };
+type Day = { date: string; temp: number; condition: string; emoji: string };
 
 type Props = {
   days: Day[];
@@ -19,6 +17,7 @@ export default function ForecastGrid({ days, selectedIndex, onSelect }: Props) {
           date={d.date}
           temp={d.temp}
           condition={d.condition}
+          emoji={d.emoji}
           selected={i === selectedIndex}
           onClick={() => onSelect(i)}
         />
