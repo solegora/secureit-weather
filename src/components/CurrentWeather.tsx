@@ -1,0 +1,24 @@
+import React from 'react';
+import { formatDateLabel } from '../services/hooks/formatDateLabel';
+
+type Props = {
+  data: { date: string; temp: number; condition: string };
+};
+
+export default function CurrentWeather({ data }: Props) {
+  return (
+    <div className="card current">
+      <div className="icon">
+        <span role="img" aria-label="weather">
+          {/* to use accordingly based of the weather */}
+          ☀️⛅️🌧️🌩️🌤️
+        </span>
+      </div>
+      <div className="details">
+        <h2>{data.temp}°</h2>
+        <p>{data.condition}</p>
+        <small>{formatDateLabel(data.date)}</small>
+      </div>
+    </div>
+  );
+}
