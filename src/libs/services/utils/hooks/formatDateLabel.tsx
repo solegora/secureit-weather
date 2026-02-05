@@ -15,16 +15,15 @@ export function generate7Days(centerData: any): any[] {
 
   // Generate 3 past days
   for (let i = 3; i >= 1; i--) {
-    debugger
     const d = new Date(today);
     d.setDate(d.getDate() - i);
     const dateStr = d.toISOString().split('T')[0];
-    const tempVariation = Math.floor(Math.random() * 6 - 3); 
+    const tempVariation = Math.floor(Math.random() * 6 - 3);
     days.push({
       date: dateStr,
-      temp: centerData.temp + tempVariation,
-      condition: centerData.condition,
-      icon: centerData.icon,
+      temp: Math.round((centerData.temp ?? 0) + tempVariation),
+      condition: centerData.condition ?? '',
+      icon: centerData.icon ?? '',
     });
   }
 
@@ -32,9 +31,9 @@ export function generate7Days(centerData: any): any[] {
   const todayStr = today.toISOString().split('T')[0];
   days.push({
     date: todayStr,
-    temp: centerData.temp,
-    condition: centerData.condition,
-    icon: centerData.icon,
+    temp: Math.round(centerData.temp ?? 0),
+    condition: centerData.condition ?? '',
+    icon: centerData.icon ?? '',
   });
 
   // Generate 3 future days
@@ -45,11 +44,12 @@ export function generate7Days(centerData: any): any[] {
     const tempVariation = Math.floor(Math.random() * 6 - 3);
     days.push({
       date: dateStr,
-      temp: centerData.temp + tempVariation,
-      condition: centerData.condition,
-      icon: centerData.icon,
+      temp: Math.round((centerData.temp ?? 0) + tempVariation),
+      condition: centerData.condition ?? '',
+      icon: centerData.icon ?? '',
     });
   }
 
   return days;
 }
+export const generate7DaysFromCurrent = generate7Days;
