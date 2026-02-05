@@ -1,19 +1,17 @@
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import type { RootState } from './services/store/store';
-import { fetchWeather, selectDay } from './services/slices/weatherSlice';
-import CurrentWeather from './components/CurrentWeather';
-import ForecastGrid from './components/ForecastGrid';
-import Loader from './components/Loader';
 import './App.css';
+import CurrentWeather from './libs/components/CurrentWeather';
+import ForecastGrid from './libs/components/ForecastGrid';
+import Loader from './libs/components/Loader';
+import { fetchWeather, selectDay } from './libs/services/slices/weatherSlice';
+import type { RootState } from './libs/services/store/store';
 
 export default function App() {
   const dispatch = useDispatch();
   const { days, selectedIndex, loading, error } = useSelector(
     (state: RootState) => state.weather
   );
-
-  console.log(days,'days === olly');
 
   useEffect(() => {
     dispatch(fetchWeather());

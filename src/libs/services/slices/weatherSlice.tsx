@@ -1,7 +1,7 @@
-import { createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+import { createSlice } from '@reduxjs/toolkit';
 
-type Day = { date: string; temp: number; condition: string ;emoji: string};
+type Day = { date: string; temp: number; condition: string; icon: string };
 
 interface WeatherState {
   days: Day[];
@@ -12,7 +12,7 @@ interface WeatherState {
 
 const initialState: WeatherState = {
   days: [],
-  selectedIndex: 0,
+  selectedIndex: 3,
   loading: false,
 };
 
@@ -25,7 +25,7 @@ const weatherSlice = createSlice({
       state.error = undefined;
     },
     fetchWeatherSuccess: (state, action: PayloadAction<Day[]>) => {
-        console.log(action.payload,'payload ===olly');
+      console.log(action.payload,'payload in success === olly');
       state.days = action.payload;
       state.loading = false;
     },
