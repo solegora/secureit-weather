@@ -1,7 +1,7 @@
 export const weatherCache = {
   DATA_KEY: 'weather_forecast_data',
   TIME_KEY: 'weather_forecast_timestamp',
-  TTL_MS: 5 * 60 * 1000, // 5 min
+  TTL_MS: 30 * 60 * 1000, // 30 minutes - WeatherStack free tier has strict rate limits
 
   get(): any[] | null {
     try {

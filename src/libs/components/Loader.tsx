@@ -1,9 +1,8 @@
-import React from 'react';
-
 export default function Loader() {
   return (
     <div className="loader card">
-      <div>Loading...</div>
+      <div className="loader-spinner"></div>
+      <div className="loader-text">Loading weather data...</div>
     </div>
   );
 }

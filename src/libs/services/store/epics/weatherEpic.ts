@@ -1,23 +1,22 @@
 import { combineEpics, ofType } from 'redux-observable';
 import { from, of } from 'rxjs';
-import { catchError, map, switchMap } from 'rxjs/operators';
+import { catchError, debounceTime, distinctUntilChanged, map, switchMap } from 'rxjs/operators';
 import { apiBase } from '../../environment/api';
-import { fetchWeather, fetchWeatherError, fetchWeatherSuccess } from '../../slices/weatherSlice';
+import { fetchWeather, fetchWeatherSuccess } from '../../slices/weatherSlice';
 import { DEFAULT_ICON_URL, mockWeatherData } from '../../utils/hooks/fallbackDataHelper';
 import { generate7Days } from '../../utils/hooks/formatDateLabel';
-
-
-let cachedWeatherData: any[] | null = null;
-let cachedWeatherTimestamp = 0;
-const CACHE_TTL_MS = 5 * 60 * 1000; 
+import { weatherCache } from '../../utils/hooks/useCache';
 
 const fetchWeatherEpic = (weatherAction$: any) =>
   weatherAction$.pipe(
     ofType(fetchWeather.type),
+    debounceTime(500), // Prevent rapid successive requests
+    distinctUntilChanged(),
     switchMap(() => {
-      const currentTimestamp = Date.now();
-      if (cachedWeatherData && currentTimestamp - cachedWeatherTimestamp < CACHE_TTL_MS) {
-        return of(fetchWeatherSuccess(cachedWeatherData));
+      // Check if cached data exists and is valid
+      const cachedData = weatherCache.get();
+      if (cachedData) {
+        return of(fetchWeatherSuccess(cachedData));
       }
 
       const weatherStackKey = (import.meta as any).env?.VITE_WEATHERSTACK_KEY;
@@ -25,8 +24,7 @@ const fetchWeatherEpic = (weatherAction$: any) =>
 
       if (!weatherStackKey) {
         // If No API key provided  fallback to mock data
-        cachedWeatherTimestamp = Date.now();
-        cachedWeatherData = mockWeatherData;
+        weatherCache.set(mockWeatherData);
         return of(fetchWeatherSuccess(mockWeatherData));
       }
 
@@ -35,50 +33,77 @@ const fetchWeatherEpic = (weatherAction$: any) =>
       )}`;
 
       return from(fetch(apiUrl)).pipe(
-        switchMap((fetchResponse) => from(fetchResponse.json())),
-        map((weatherResponse: any) => {
-          let currentWeatherData: any = null;
-
-          // Extract current weather data from API response
-          if (weatherResponse.current) {
-            const currentWeather = weatherResponse.current;
-            currentWeatherData = {
-              temp: currentWeather.temperature ?? currentWeather.temp ?? weatherResponse.temperature ?? 0,
-              condition:
-                currentWeather.weather_descriptions?.[0] || weatherResponse.weather_descriptions?.[0] || '',
-              icon: currentWeather.weather_icons?.[0] || weatherResponse.weather_icons?.[0] || DEFAULT_ICON_URL,
-            };
-          } else if (weatherResponse.forecast && typeof weatherResponse.forecast === 'object') {
-            // Try to use first forecast entry as base
-            const firstForecastDate = Object.keys(weatherResponse.forecast)[0];
-            const forecastData = weatherResponse.forecast[firstForecastDate];
-            currentWeatherData = {
-              temp: (forecastData.avgtemp ?? forecastData.avgtempC ?? forecastData.avgtempF ?? forecastData.avgtemp) || 0,
-              condition: forecastData.condition ?? forecastData.weather_descriptions?.[0] ?? '',
-              icon: forecastData.icon || (forecastData.weather_icons && forecastData.weather_icons[0]) || DEFAULT_ICON_URL,
-            };
-          } else {
-            currentWeatherData = {
-              temp: weatherResponse.temperature ?? weatherResponse.temp ?? 0,
-              condition:
-                (weatherResponse.weather_descriptions && weatherResponse.weather_descriptions[0]) ||
-                weatherResponse.condition ||
-                '',
-              icon:
-                (weatherResponse.weather_icons && weatherResponse.weather_icons[0]) ||
-                weatherResponse.weather_icon ||
-                DEFAULT_ICON_URL,
-            };
+        switchMap((fetchResponse) => {
+          // Check for rate limit error (429 Too Many Requests)
+          if (fetchResponse.status === 429) {
+            console.warn('WeatherStack API rate limited (429). Using fallback data.');
+            weatherCache.set(mockWeatherData);
+            return of(fetchWeatherSuccess(mockWeatherData));
           }
 
-          // Improvise 7-day forecast based on current weather (since free API doesn't provide forecast)
-          const sevenDayForecast = generate7Days(currentWeatherData);
+          if (!fetchResponse.ok) {
+            throw new Error(`API error: ${fetchResponse.status} ${fetchResponse.statusText}`);
+          }
 
-          cachedWeatherData = sevenDayForecast;
-          cachedWeatherTimestamp = Date.now();
-          return fetchWeatherSuccess(sevenDayForecast);
-        }),
-        catchError((fetchError) => of(fetchWeatherError(fetchError?.message || 'Failed to fetch weather data')))
+          return from(fetchResponse.json()).pipe(
+            map((weatherResponse: any) => {
+              // Check if API returned an error response
+              if (weatherResponse.error || weatherResponse.success === false) {
+                console.warn('WeatherStack API error response:', weatherResponse.error);
+                throw new Error(weatherResponse.error?.info || 'API returned an error');
+              }
+
+              let currentWeatherData: any = null;
+
+              // Extract current weather data from API response
+              if (weatherResponse.current) {
+                const currentWeather = weatherResponse.current;
+                currentWeatherData = {
+                  temp: currentWeather.temperature ?? currentWeather.temp ?? weatherResponse.temperature ?? 0,
+                  condition:
+                    currentWeather.weather_descriptions?.[0] || weatherResponse.weather_descriptions?.[0] || '',
+                  icon: currentWeather.weather_icons?.[0] || weatherResponse.weather_icons?.[0] || DEFAULT_ICON_URL,
+                };
+              } else if (weatherResponse.forecast && typeof weatherResponse.forecast === 'object') {
+                // Try to use first forecast entry as base
+                const firstForecastDate = Object.keys(weatherResponse.forecast)[0];
+                const forecastData = weatherResponse.forecast[firstForecastDate];
+                currentWeatherData = {
+                  temp: (forecastData.avgtemp ?? forecastData.avgtempC ?? forecastData.avgtempF ?? forecastData.avgtemp) || 0,
+                  condition: forecastData.condition ?? forecastData.weather_descriptions?.[0] ?? '',
+                  icon: forecastData.icon || (forecastData.weather_icons && forecastData.weather_icons[0]) || DEFAULT_ICON_URL,
+                };
+              } else {
+                currentWeatherData = {
+                  temp: weatherResponse.temperature ?? weatherResponse.temp ?? 0,
+                  condition:
+                    (weatherResponse.weather_descriptions && weatherResponse.weather_descriptions[0]) ||
+                    weatherResponse.condition ||
+                    '',
+                  icon:
+                    (weatherResponse.weather_icons && weatherResponse.weather_icons[0]) ||
+                    weatherResponse.weather_icon ||
+                    DEFAULT_ICON_URL,
+                };
+              }
+
+              // Improvise 7-day forecast based on current weather (since free API doesn't provide forecast)
+              const sevenDayForecast = generate7Days(currentWeatherData);
+
+              // Store in cache
+              weatherCache.set(sevenDayForecast);
+              return fetchWeatherSuccess(sevenDayForecast);
+            }),
+            catchError((fetchError) => {
+              console.error('Weather fetch error:', fetchError);
+              console.log('Falling back to mock weather data...');
+              
+              // On ANY error, use and cache mock data
+              weatherCache.set(mockWeatherData);
+              return of(fetchWeatherSuccess(mockWeatherData));
+            })
+          );
+        })
       );
     })
   );

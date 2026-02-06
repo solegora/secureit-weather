@@ -52,4 +52,3 @@ export function generate7Days(centerData: any): any[] {
 
   return days;
 }
-export const generate7DaysFromCurrent = generate7Days;

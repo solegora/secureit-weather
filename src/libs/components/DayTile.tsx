@@ -21,15 +21,14 @@ export default function DayTile({
     <div
       className={`tile card ${selected ? 'selected' : ''}`}
       onClick={onClick}
+      onKeyDown={(e) => e.key === 'Enter' && onClick()}
       role="button"
       tabIndex={0}
     >
-      <div className="small">
-        <img src={icon} alt="weather icon" style={{ width: '32px', height: '32px' }} />
-      </div>
+      <img src={icon} alt={condition} />
       <div className="small">{formatDateLabel(date)}</div>
-      <div style={{ fontWeight: 700, fontSize: 18 }}>{temp}°</div>
-      <div className="small">{condition}</div>
+      <div className="tile-temp">{Math.round(temp)}°</div>
+      <div className="tile-condition">{condition}</div>
     </div>
   );
 }

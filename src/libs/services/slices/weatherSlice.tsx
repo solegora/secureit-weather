@@ -9,7 +9,6 @@ interface WeatherState {
   loading: boolean;
   error?: string;
 }
-
 const initialState: WeatherState = {
   days: [],
   selectedIndex: 3,

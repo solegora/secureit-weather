@@ -26,18 +26,19 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1 className="title">Weather App 🌨️</h1>
-        </header>
+        <h1 className="title">⛅ Weather Forecast</h1>
+      </header>
 
-        <CurrentWeather data={selected} />
+      <CurrentWeather data={selected} />
+
       <div className="section">
-        <h3>Forecast</h3>
-          <ForecastGrid
-            days={days}
-            selectedIndex={selectedIndex}
-            onSelect={(i) => dispatch(selectDay(i))}
-          />
-        </div>
+        <h3>📅 7-Day Forecast</h3>
+        <ForecastGrid
+          days={days}
+          selectedIndex={selectedIndex}
+          onSelect={(i) => dispatch(selectDay(i))}
+        />
       </div>
-      );
+    </div>
+  );
 }
